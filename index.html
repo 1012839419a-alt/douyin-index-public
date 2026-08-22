@@ -1,0 +1,703 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>抖音指数研究看板</title>
+  <style>
+    :root {
+      --ink: #17212b;
+      --muted: #6c7781;
+      --paper: #f5f1e8;
+      --card: rgba(255, 253, 248, .92);
+      --line: #d9d2c4;
+      --blue: #1967d2;
+      --blue-soft: #dbeafe;
+      --coral: #ee6b56;
+      --teal: #0f9f8f;
+      --amber: #d79a21;
+      --shadow: 0 18px 48px rgba(42, 49, 55, .10);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: "Microsoft YaHei UI", "Noto Sans SC", sans-serif;
+      background:
+        radial-gradient(circle at 12% 3%, rgba(238, 107, 86, .11), transparent 24rem),
+        radial-gradient(circle at 90% 12%, rgba(15, 159, 143, .10), transparent 28rem),
+        linear-gradient(rgba(23, 33, 43, .035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(23, 33, 43, .035) 1px, transparent 1px),
+        var(--paper);
+      background-size: auto, auto, 28px 28px, 28px 28px, auto;
+      min-height: 100vh;
+    }
+    button, input, select { font: inherit; }
+    button { color: inherit; }
+    .shell { width: min(1480px, calc(100% - 32px)) !important; max-width: none !important; margin: 0 auto; padding: 18px 0 28px; }
+    .site-nav { position: sticky; top: 10px; z-index: 20; display: flex; align-items: center; justify-content: space-between; gap: 20px; min-height: 54px; margin-bottom: 14px; padding: 9px 12px 9px 16px; border: 1px solid rgba(255,255,255,.76); border-radius: 16px; background: rgba(255,253,248,.9); box-shadow: 0 9px 30px rgba(42,49,55,.07); backdrop-filter: blur(16px); }
+    .site-brand { display:flex; align-items:center; gap:9px; color:var(--ink); text-decoration:none; font-family:Georgia,"STZhongsong",serif; font-weight:700; white-space:nowrap; }
+    .site-brand i { width:31px; height:31px; display:grid; place-items:center; border-radius:10px; color:white; background:#173f55; font-style:normal; }
+    .site-links { display:flex; gap:4px; overflow-x:auto; }
+    .site-links a { padding:8px 10px; border-radius:9px; color:var(--muted); text-decoration:none; font-size:12px; white-space:nowrap; }
+    .site-links a:hover, .site-links a.active { color:var(--blue); background:var(--blue-soft); }
+    .masthead {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 24px;
+      align-items: end;
+      padding: 28px 30px;
+      color: #fff;
+      border-radius: 24px;
+      overflow: hidden;
+      position: relative;
+      background: linear-gradient(118deg, #152a3a 0%, #173f55 58%, #0e756d 130%);
+      box-shadow: var(--shadow);
+    }
+    .masthead::after {
+      content: "";
+      position: absolute;
+      width: 340px;
+      height: 340px;
+      right: -90px;
+      top: -190px;
+      border: 1px solid rgba(255,255,255,.15);
+      border-radius: 50%;
+      box-shadow: 0 0 0 54px rgba(255,255,255,.035), 0 0 0 108px rgba(255,255,255,.025);
+    }
+    .eyebrow { color: #8bd4c9; letter-spacing: .18em; font-size: 12px; font-weight: 800; }
+    h1 { margin: 9px 0 5px; font-family: "STZhongsong", "Noto Serif SC", serif; font-size: clamp(28px, 3vw, 46px); font-weight: 700; letter-spacing: .02em; }
+    .masthead p { margin: 0; color: rgba(255,255,255,.68); font-size: 14px; }
+    .selector { position: relative; z-index: 1; display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; }
+    .selector select {
+      min-width: 240px;
+      border: 1px solid rgba(255,255,255,.24);
+      border-radius: 14px;
+      padding: 12px 40px 12px 14px;
+      background: rgba(255,255,255,.10);
+      color: white;
+      outline: none;
+    }
+    .selector select option { color: var(--ink); background: white; }
+    .freshness { padding: 11px 13px; border-radius: 14px; background: rgba(255,255,255,.09); font-size: 12px; white-space: nowrap; }
+    .freshness strong { color: #fff; }
+    .kpis { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; margin: 16px 0; }
+    .kpi {
+      background: var(--card);
+      border: 1px solid rgba(217, 210, 196, .8);
+      border-radius: 17px;
+      padding: 16px 18px;
+      box-shadow: 0 8px 26px rgba(42,49,55,.055);
+    }
+    .kpi .label { color: var(--muted); font-size: 12px; }
+    .kpi .value { margin-top: 6px; font-family: "Georgia", "STZhongsong", serif; font-size: 25px; font-weight: 700; }
+    .kpi .sub { color: var(--muted); margin-top: 3px; font-size: 11px; }
+    .section-head { display: flex; justify-content: space-between; gap: 16px; align-items: end; margin: 28px 2px 13px; }
+    .section-head h2 { margin: 0; font-family: "STZhongsong", "Noto Serif SC", serif; font-size: 23px; }
+    .section-head p { margin: 4px 0 0; color: var(--muted); font-size: 13px; }
+    .legend { display: flex; flex-wrap: wrap; gap: 13px; color: var(--muted); font-size: 12px; }
+    .legend span { display: inline-flex; align-items: center; gap: 6px; }
+    .legend i { width: 9px; height: 9px; border-radius: 50%; }
+    .graphs { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .panel {
+      background: var(--card);
+      border: 1px solid rgba(217, 210, 196, .85);
+      border-radius: 22px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .panel-head { display: flex; align-items: start; justify-content: space-between; gap: 16px; padding: 18px 20px 5px; }
+    .panel-head h3 { margin: 0; font-size: 16px; }
+    .panel-head p { margin: 4px 0 0; color: var(--muted); font-size: 12px; }
+    .count-badge { color: var(--blue); background: var(--blue-soft); border-radius: 999px; padding: 5px 9px; font-size: 11px; white-space: nowrap; }
+    .node-map { display: block; width: 100%; min-height: 430px; }
+    .g6-shell { position: relative; min-height: 430px; overflow: hidden; }
+    .g6-stage { width: 100%; height: 430px; cursor: default; touch-action: auto; }
+    .g6-stage:active { cursor: default; }
+    .g6-tools { display: none; }
+    .g6-tools button { width: 33px; height: 31px; display: grid; place-items: center; border: 0; border-radius: 8px; color: #40515c; background: transparent; cursor: pointer; font-weight: 700; }
+    .g6-tools button:hover { color: var(--blue); background: var(--blue-soft); }
+    .g6-hint { position: absolute; z-index: 2; left: 50%; bottom: 14px; transform: translateX(-50%); padding: 6px 10px; border-radius: 999px; color: var(--muted); background: rgba(255,253,248,.88); font-size: 10px; white-space: nowrap; pointer-events: none; }
+    .g6-data-popover { position: absolute; z-index: 4; top: 16px; right: 16px; width: min(232px,calc(100% - 32px)); padding: 14px; border: 1px solid rgba(23,33,43,.1); border-radius: 15px; color: var(--ink); background: rgba(255,253,248,.97); box-shadow: 0 14px 38px rgba(23,33,43,.14); backdrop-filter: blur(12px); pointer-events: none; }
+    .g6-data-popover.pinned { border-color: rgba(25,103,210,.28); box-shadow: 0 16px 44px rgba(23,33,43,.18); pointer-events: auto; }
+    .g6-data-popover[hidden] { display: none; }
+    .g6-pop-kicker { color: var(--blue); font-size: 9px; font-weight: 800; letter-spacing: .13em; }
+    .g6-data-popover h4 { margin: 6px 0 10px; overflow: hidden; font-family: "STZhongsong","Noto Serif SC",serif; font-size: 17px; white-space: nowrap; text-overflow: ellipsis; }
+    .g6-pop-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; overflow: hidden; border: 1px solid var(--line); border-radius: 10px; background: var(--line); }
+    .g6-pop-metric { padding: 9px 10px; background: #fffdf8; }
+    .g6-pop-metric span { display: block; color: var(--muted); font-size: 9px; }
+    .g6-pop-metric strong { display: block; margin-top: 4px; font: 700 13px/1.2 Georgia,"Microsoft YaHei UI",sans-serif; }
+    .g6-pop-foot { margin-top: 9px; color: var(--muted); font-size: 9px; line-height: 1.5; }
+    .g6-pop-actions { display: flex; gap: 7px; margin-top: 11px; padding-top: 10px; border-top: 1px solid var(--line); }
+    .g6-pop-actions button { flex: 1; min-height: 32px; border: 1px solid var(--line); border-radius: 9px; color: var(--muted); background: white; cursor: pointer; font-size: 10px; }
+    .g6-pop-actions button[data-pop-action="detail"] { color: white; border-color: var(--blue); background: var(--blue); }
+    .g6-pop-actions button:hover { transform: translateY(-1px); }
+    .g6-detail-overlay { position: fixed; z-index: 80; inset: 0; display: flex; justify-content: flex-end; background: rgba(14,30,40,.38); backdrop-filter: blur(3px); }
+    .g6-detail-drawer { width: min(560px,100%); height: 100%; overflow-y: auto; padding: 26px; background: #fffdf8; box-shadow: -24px 0 70px rgba(14,30,40,.2); animation: drawer-in .24s ease both; }
+    @keyframes drawer-in { from { transform: translateX(35px); opacity: .65; } to { transform: none; opacity: 1; } }
+    .g6-detail-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; padding-bottom: 19px; border-bottom: 1px solid var(--line); }
+    .g6-detail-head .kicker { color: var(--blue); font-size: 10px; font-weight: 800; letter-spacing: .14em; }
+    .g6-detail-head h2 { margin: 7px 0 5px; font-family: "STZhongsong","Noto Serif SC",serif; font-size: 29px; }
+    .g6-detail-head p { margin: 0; color: var(--muted); font-size: 11px; }
+    .g6-detail-close { width: 36px; height: 36px; flex: 0 0 auto; border: 1px solid var(--line); border-radius: 11px; color: var(--muted); background: white; cursor: pointer; font-size: 20px; }
+    .g6-detail-metrics { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin: 18px 0 24px; }
+    .g6-detail-metric { min-height: 74px; padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: #f7f3ea; }
+    .g6-detail-metric span { display: block; color: var(--muted); font-size: 9px; }
+    .g6-detail-metric strong { display: block; margin-top: 7px; overflow-wrap: anywhere; font: 700 16px/1.25 Georgia,"Microsoft YaHei UI",sans-serif; }
+    .g6-evidence-group { margin-top: 22px; }
+    .g6-evidence-title { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 9px; }
+    .g6-evidence-title h3 { margin: 0; font-size: 16px; }
+    .g6-evidence-title span { padding: 4px 7px; border-radius: 999px; color: var(--blue); background: var(--blue-soft); font-size: 9px; }
+    .g6-evidence-list { display: grid; gap: 8px; }
+    .g6-evidence-link { display: grid; grid-template-columns: 27px minmax(0,1fr) 18px; gap: 9px; align-items: start; padding: 12px; border: 1px solid var(--line); border-radius: 12px; color: var(--ink); background: white; text-decoration: none; }
+    .g6-evidence-link:hover { color: var(--blue); border-color: var(--blue); }
+    .g6-evidence-link .rank { width: 27px; height: 27px; display: grid; place-items: center; border-radius: 8px; color: var(--muted); background: #f2eee5; font: 700 10px/1 Georgia,serif; }
+    .g6-evidence-link strong { display: -webkit-box; overflow: hidden; font-size: 12px; font-weight: 600; line-height: 1.55; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
+    .g6-evidence-link i { color: var(--blue); font-style: normal; }
+    .g6-detail-empty { padding: 24px; border: 1px dashed var(--line); border-radius: 13px; color: var(--muted); text-align: center; font-size: 12px; }
+    @media (max-width: 620px) { .g6-detail-drawer { padding: 20px 15px; } .g6-detail-metrics { grid-template-columns: 1fr 1fr; } }
+    .orbit { fill: none; stroke: #d9e0e3; stroke-dasharray: 3 7; }
+    .orbit-label { fill: #98a1a8; font-size: 10px; }
+    .node-line { stroke: #cdd5d8; stroke-width: 1; opacity: .72; }
+    .node-dot { cursor: pointer; stroke: #fffdf8; stroke-width: 2.5; transition: filter .15s ease, stroke-width .15s ease; }
+    .node-dot:hover { filter: brightness(1.08) drop-shadow(0 4px 5px rgba(23,33,43,.24)); stroke-width: 4; }
+    .node-label { fill: #33414c; font-size: 10px; pointer-events: none; paint-order: stroke; stroke: #fffdf8; stroke-width: 4px; stroke-linejoin: round; }
+    .center-dot { fill: var(--blue); filter: drop-shadow(0 9px 14px rgba(25,103,210,.28)); }
+    .center-label { fill: white; font-weight: 800; font-size: 14px; text-anchor: middle; dominant-baseline: middle; }
+    .empty { display: grid; place-items: center; min-height: 430px; color: var(--muted); text-align: center; padding: 30px; }
+    .workbench { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(310px, .65fr); gap: 16px; }
+    .toolbar { display: flex; gap: 8px; flex-wrap: wrap; padding: 15px 18px; border-bottom: 1px solid #e7e1d6; }
+    .segmented { display: inline-flex; background: #ece7dc; border-radius: 12px; padding: 3px; }
+    .segmented button { border: 0; background: transparent; border-radius: 9px; padding: 7px 12px; cursor: pointer; font-size: 12px; }
+    .segmented button.active { background: white; color: var(--blue); box-shadow: 0 3px 9px rgba(42,49,55,.10); }
+    .search-box { margin-left: auto; border: 1px solid var(--line); background: white; border-radius: 11px; padding: 8px 11px; min-width: 190px; outline: none; }
+    .table-wrap { overflow: auto; max-height: 560px; }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    th { position: sticky; top: 0; z-index: 1; text-align: left; color: var(--muted); background: #f8f5ee; font-weight: 700; padding: 11px 12px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+    td { padding: 11px 12px; border-bottom: 1px solid #eee9df; vertical-align: middle; }
+    tbody tr { cursor: pointer; transition: background .12s ease; }
+    tbody tr:hover, tbody tr.selected { background: #edf5ff; }
+    .word { max-width: 185px; font-weight: 700; }
+    .role { color: var(--muted); white-space: nowrap; }
+    .trend-up { color: var(--coral); }
+    .trend-down { color: var(--teal); }
+    .mini-bar { height: 6px; width: 72px; border-radius: 4px; background: #e7e2d8; overflow: hidden; display: inline-block; vertical-align: middle; margin-right: 7px; }
+    .mini-bar i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--blue), #5f9fe8); }
+    .inspector { padding: 20px; min-height: 420px; }
+    .inspector .hint { color: var(--muted); text-align: center; padding: 90px 18px; }
+    .inspect-kicker { color: var(--blue); font-size: 11px; letter-spacing: .12em; font-weight: 800; }
+    .inspector h3 { margin: 7px 0 15px; font-family: "STZhongsong", serif; font-size: 25px; }
+    .inspect-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+    .inspect-metric { background: #f5f2eb; border-radius: 12px; padding: 11px; }
+    .inspect-metric span { display: block; color: var(--muted); font-size: 10px; }
+    .inspect-metric strong { display: block; margin-top: 4px; font-size: 15px; }
+    .detail-title { margin: 19px 0 8px; font-size: 13px; }
+    .detail-list { display: grid; gap: 7px; }
+    .detail-link { display: block; color: var(--ink); text-decoration: none; background: white; border: 1px solid var(--line); border-radius: 11px; padding: 9px 10px; font-size: 11px; line-height: 1.45; }
+    .detail-link:hover { border-color: var(--blue); color: var(--blue); }
+    .notice { color: #735a17; background: #fff6d9; border: 1px solid #eadba5; border-radius: 13px; padding: 11px 13px; font-size: 12px; margin-top: 14px; }
+    .tooltip { position: fixed; z-index: 30; display: none; width: 220px; pointer-events: none; background: #152a3a; color: white; border-radius: 12px; padding: 11px 12px; box-shadow: 0 15px 40px rgba(0,0,0,.22); font-size: 11px; line-height: 1.65; }
+    .tooltip strong { display: block; font-size: 13px; margin-bottom: 2px; }
+    .loading { min-height: 100vh; display: grid; place-items: center; color: var(--muted); }
+    .error-box { max-width: 680px; padding: 30px; background: white; border-radius: 20px; box-shadow: var(--shadow); }
+    @media (max-width: 1100px) {
+      .kpis { grid-template-columns: repeat(3, 1fr); }
+      .graphs, .workbench { grid-template-columns: 1fr; }
+      .node-map { min-height: 390px; }
+    }
+    @media (max-width: 700px) {
+      .shell { width:min(100% - 16px,1480px) !important; padding:9px 0 28px; }
+      .site-nav { top:5px; padding-left:10px; }
+      .site-brand span { display:none; }
+      .masthead { grid-template-columns: 1fr; padding: 22px; }
+      .selector { grid-template-columns: 1fr; }
+      .selector select { min-width: 0; width: 100%; }
+      .kpis { grid-template-columns: repeat(2, 1fr); }
+      .section-head { align-items: start; flex-direction: column; }
+      .panel-head { padding: 16px 15px 2px; }
+      .search-box { margin-left: 0; width: 100%; }
+      .workbench { display: block; }
+      .inspector { border-top: 1px solid var(--line); }
+    }
+  </style>
+  <script src="./vendor/g6.min.js"></script>
+  <link rel="stylesheet" href="./gaojixing-console.css?v=20260815-unified">
+</head>
+<body class="gx-research">
+  <main id="app" class="loading">正在装载抖音指数数据...</main>
+  <div id="tooltip" class="tooltip"></div>
+  <script>
+    const state = { keyword: "", relation: "all", query: "", selected: null };
+    let datasets = {};
+    const $ = (selector) => document.querySelector(selector);
+    const esc = (value) => String(value ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
+    const num = (value) => new Intl.NumberFormat("zh-CN", { notation: Math.abs(Number(value)) >= 10000 ? "compact" : "standard", maximumFractionDigits: 1 }).format(Number(value) || 0);
+    const pct = (value) => `${Number(value || 0).toFixed(Number(value) >= 10 ? 1 : 2)}%`;
+    const latestRow = (rows) => rows.slice().sort((a, b) => String(b.snapshotDate).localeCompare(String(a.snapshotDate)))[0];
+
+    async function boot() {
+      try {
+        const response = await fetch(`./douyin-index-research.artifact.json?t=${Date.now()}`, { cache: "no-store" });
+        if (!response.ok) throw new Error(`数据文件加载失败（${response.status}）`);
+        const artifact = await response.json();
+        datasets = artifact.snapshot?.datasets || {};
+        const keywords = [...new Set((datasets.overview || []).map(row => row.keyword))];
+        state.keyword = keywords.includes("高吉星") ? "高吉星" : keywords[0] || "";
+        renderShell(keywords);
+        renderAll();
+      } catch (error) {
+        document.querySelector("#app").className = "loading";
+        document.querySelector("#app").innerHTML = `<div class="error-box"><h2>看板数据没有打开</h2><p>${esc(error.message)}</p><p>请通过本地 HTTP 地址访问本页，不要使用 file:// 地址。</p></div>`;
+      }
+    }
+
+    function renderShell(keywords) {
+      const options = keywords.map(keyword => `<option value="${esc(keyword)}">${esc(keyword)}</option>`).join("");
+      document.querySelector("#app").className = "shell";
+      document.querySelector("#app").innerHTML = `
+        <nav class="site-nav" aria-label="产品导航"><a class="site-brand" href="./index.html"><i>高</i><span>抖音信号中枢</span></a><div class="site-links"><a href="./index.html">首页</a><a href="./抖音指数搜索结果镜像.html?keyword=高吉星">指数搜索</a><a class="active" href="./抖音指数研究看板.html">研究看板</a><a href="http://127.0.0.1:8766/%E9%AB%98%E5%90%89%E6%98%9F%E5%86%85%E5%AE%B9%E5%86%85%E7%94%9F%E5%B7%A5%E4%BD%9C%E5%8F%B0.html">内容工作台</a><a href="./数据分析.html">数据分析</a></div></nav>
+        <header class="masthead">
+          <div>
+            <div class="eyebrow">DOUYIN SIGNAL LAB / 品牌词研究</div>
+            <h1><span id="brandTitle">高吉星</span> 抖音指数研究中枢</h1>
+            <p>趋势、关联节点与内容线索在同一数据口径下研究</p>
+          </div>
+          <div class="selector">
+            <select id="keywordSelect" aria-label="选择关键词">${options}</select>
+            <div class="freshness">数据截至 <strong id="freshDate">--</strong></div>
+          </div>
+        </header>
+        <section id="kpis" class="kpis"></section>
+        <div class="section-head">
+          <div><h2>关联图谱节点</h2><p>页面可见节点与扩展候选分层保存；图中只呈现真实可见节点</p></div>
+          <div class="legend"><span><i style="background:var(--coral)"></i>上升</span><span><i style="background:var(--teal)"></i>下降</span><span><i style="background:var(--blue)"></i>中心词</span><span>圆点越大＝相关度加权搜索机会越高</span></div>
+        </div>
+        <section class="graphs">
+          <article class="panel"><div class="panel-head"><div><h3>搜索关联</h3><p>用户主动搜索语义；绝对相关度决定与中心的距离</p></div><span id="searchCount" class="count-badge">0 节点</span></div><div id="searchGraph"></div></article>
+          <article class="panel"><div class="panel-head"><div><h3>内容关联</h3><p>内容共现语义；不与搜索关联混合计算</p></div><span id="contentCount" class="count-badge">0 节点</span></div><div id="contentGraph"></div></article>
+        </section>
+        <div class="section-head"><div><h2>节点研究台</h2><p>点击节点查看指数、涨幅、热门内容与原始链接</p></div></div>
+        <section class="workbench panel">
+          <div>
+            <div class="toolbar">
+              <div class="segmented" id="relationTabs">
+                <button class="active" data-value="all">全部</button><button data-value="搜索">搜索关联</button><button data-value="内容">内容关联</button>
+              </div>
+              <input id="nodeSearch" class="search-box" placeholder="搜索关联词...">
+            </div>
+            <div class="table-wrap"><table><thead><tr><th>节点</th><th>类型</th><th>相关度</th><th>搜索指数</th><th>趋势</th><th>角色</th></tr></thead><tbody id="nodeRows"></tbody></table></div>
+          </div>
+          <aside id="inspector" class="inspector"><div class="hint">从图谱或表格选择一个节点<br>查看它背后的内容与链接</div></aside>
+        </section>`;
+      document.querySelector("#keywordSelect").value = state.keyword;
+      document.querySelector("#keywordSelect").addEventListener("change", event => { state.keyword = event.target.value; state.selected = null; renderAll(); });
+      document.querySelectorAll("#relationTabs button").forEach(button => button.addEventListener("click", () => {
+        state.relation = button.dataset.value;
+        document.querySelectorAll("#relationTabs button").forEach(item => item.classList.toggle("active", item === button));
+        renderTable();
+      }));
+      document.querySelector("#nodeSearch").addEventListener("input", event => { state.query = event.target.value.trim().toLowerCase(); renderTable(); });
+    }
+
+    function currentOverview() {
+      return latestRow((datasets.overview || []).filter(row => row.keyword === state.keyword)) || {};
+    }
+    function rowsFor(id) {
+      const overview = currentOverview();
+      return (datasets[id] || []).filter(row => row.keyword === state.keyword && (!overview.snapshotDate || row.snapshotDate === overview.snapshotDate));
+    }
+
+    function renderAll() {
+      const overview = currentOverview();
+      document.querySelector("#brandTitle").textContent = state.keyword;
+      document.querySelector("#freshDate").textContent = overview.snapshotDate || "暂无";
+      const kpis = [
+        ["最新搜索指数", num(overview.latestSearchIndex), `周期均值 ${num(overview.averageSearchIndex)}`],
+        ["最新综合指数", num(overview.latestCompositeIndex), `周期均值 ${num(overview.averageCompositeIndex)}`],
+        ["搜索关联候选", num(overview.searchCorrelationCount), "全量保存"],
+        ["内容关联候选", num(overview.contentCorrelationCount), "全量保存"],
+        ["搜索图谱节点", num(rowsFor("search_graph").length), "页面真实显示"],
+        ["内容图谱节点", num(rowsFor("content_graph").length), "页面真实显示"]
+      ];
+      document.querySelector("#kpis").innerHTML = kpis.map(item => `<article class="kpi"><div class="label">${item[0]}</div><div class="value">${item[1]}</div><div class="sub">${item[2]}</div></article>`).join("");
+      drawGraphG6("#searchGraph", rowsFor("search_graph"), "search");
+      drawGraphG6("#contentGraph", rowsFor("content_graph"), "content");
+      renderTable();
+      renderInspector();
+    }
+
+    function drawGraph(target, inputRows, type) {
+      const host = document.querySelector(target);
+      const rows = inputRows.slice().sort((a, b) => Number(a.graphOrder) - Number(b.graphOrder));
+      if (!rows.length) {
+        document.querySelector(type === "search" ? "#searchCount" : "#contentCount").textContent = "0 节点";
+        host.innerHTML = `<div class="empty"><div><strong>本关键词暂未采集关联图谱</strong><br><small>全量指数仍可在上方查看</small></div></div>`;
+        return;
+      }
+      const width = 720, height = 430, cx = width / 2, cy = height / 2 + 3;
+      const maxRel = Math.max(...rows.map(row => Number(row.relevancePercent) || 0), 1);
+      document.querySelector(type === "search" ? "#searchCount" : "#contentCount").textContent = `${rows.length} 节点 · 最高 ${pct(maxRel)}`;
+      const opportunity = rows.map(row => Math.log10((Number(row.searchIndex) || 0) + 1) * Math.sqrt((Number(row.relevancePercent) || 0) / 100));
+      const minOpportunity = Math.min(...opportunity), maxOpportunity = Math.max(...opportunity);
+      const placed = rows.map((row, index) => {
+        const rel = Number(row.relevancePercent) || 0;
+        const closeness = Math.log10(1 + rel) / Math.log10(101);
+        const radius = 88 + (1 - closeness) * 98;
+        const angle = -Math.PI / 2 + (Math.PI * 2 * index / rows.length) + (index % 2 ? .045 : -.045);
+        const x = cx + Math.cos(angle) * radius * 1.45;
+        const y = cy + Math.sin(angle) * radius;
+        const score = opportunity[index];
+        const size = 7 + (maxOpportunity === minOpportunity ? .5 : (score - minOpportunity) / (maxOpportunity - minOpportunity)) * 8;
+        return { row, x, y, size, angle };
+      });
+      const circles = [50, 10, 1].map(rel => {
+        const radius = 88 + (1 - Math.log10(1 + rel) / Math.log10(101)) * 98;
+        return `<ellipse class="orbit" cx="${cx}" cy="${cy}" rx="${(radius * 1.45).toFixed(1)}" ry="${radius.toFixed(1)}"></ellipse><text class="orbit-label" x="${(cx + radius * 1.45 - 26).toFixed(1)}" y="${(cy - 6).toFixed(1)}">${rel}%</text>`;
+      }).join("");
+      const links = placed.map(item => `<line class="node-line" x1="${cx}" y1="${cy}" x2="${item.x.toFixed(1)}" y2="${item.y.toFixed(1)}"></line>`).join("");
+      const nodes = placed.map((item, index) => {
+        const color = item.row.trend === "下降" ? "var(--teal)" : "var(--coral)";
+        const outward = Math.cos(item.angle) >= 0 ? 1 : -1;
+        const labelX = item.x + outward * (item.size + 5);
+        const anchor = outward > 0 ? "start" : "end";
+        const label = String(item.row.name).length > 11 ? `${String(item.row.name).slice(0, 10)}…` : item.row.name;
+        return `<g><circle class="node-dot" data-graph="${type}" data-index="${index}" cx="${item.x.toFixed(1)}" cy="${item.y.toFixed(1)}" r="${item.size.toFixed(1)}" fill="${color}"></circle><text class="node-label" x="${labelX.toFixed(1)}" y="${(item.y + 3.5).toFixed(1)}" text-anchor="${anchor}">${esc(label)}</text></g>`;
+      }).join("");
+      host.innerHTML = `<svg class="node-map" viewBox="0 0 ${width} ${height}" role="img" aria-label="${type === "search" ? "搜索" : "内容"}关联节点图">${circles}${links}<circle class="center-dot" cx="${cx}" cy="${cy}" r="43"></circle><text class="center-label" x="${cx}" y="${cy}">${esc(state.keyword)}</text>${nodes}</svg>`;
+      host.querySelectorAll(".node-dot").forEach(dot => {
+        const item = placed[Number(dot.dataset.index)];
+        dot.addEventListener("mouseenter", event => showTooltip(event, item.row));
+        dot.addEventListener("mousemove", moveTooltip);
+        dot.addEventListener("mouseleave", hideTooltip);
+        dot.addEventListener("click", () => selectNode(item.row));
+      });
+    }
+
+    function showTooltip(event, row) {
+      const tooltip = document.querySelector("#tooltip");
+      tooltip.innerHTML = `<strong>${esc(row.name)}</strong>相关度 ${pct(row.relevancePercent)}<br>搜索指数 ${num(row.searchIndex)}<br>综合指数 ${num(row.compositeIndex)}<br>热度 ${esc(row.heatChange || "--")}`;
+      tooltip.style.display = "block";
+      moveTooltip(event);
+    }
+    function moveTooltip(event) {
+      const tooltip = document.querySelector("#tooltip");
+      tooltip.style.left = `${Math.min(innerWidth - 235, event.clientX + 14)}px`;
+      tooltip.style.top = `${Math.min(innerHeight - 150, event.clientY + 14)}px`;
+    }
+    function hideTooltip() { document.querySelector("#tooltip").style.display = "none"; }
+
+    function tableRows() {
+      return rowsFor("correlation").filter(row => row.nodeRole !== "中心词")
+        .filter(row => state.relation === "all" || String(row.relationType).includes(state.relation))
+        .filter(row => !state.query || String(row.name).toLowerCase().includes(state.query))
+        .sort((a, b) => {
+          const role = (a.nodeRole === "页面图谱节点" ? 0 : 1) - (b.nodeRole === "页面图谱节点" ? 0 : 1);
+          return role || Number(b.relevancePercent) - Number(a.relevancePercent) || Number(b.searchIndex) - Number(a.searchIndex);
+        });
+    }
+
+    function renderTable() {
+      const rows = tableRows();
+      const maxRel = Math.max(...rows.map(row => Number(row.relevancePercent) || 0), 1);
+      document.querySelector("#nodeRows").innerHTML = rows.map((row, index) => `
+        <tr data-index="${index}" class="${state.selected && state.selected.name === row.name && state.selected.relationType === row.relationType ? "selected" : ""}">
+          <td class="word">${esc(row.name)}</td>
+          <td>${esc(row.relationType)}</td>
+          <td><span class="mini-bar"><i style="width:${Math.max(3, Number(row.relevancePercent) / maxRel * 100)}%"></i></span>${pct(row.relevancePercent)}</td>
+          <td>${num(row.searchIndex)}</td>
+          <td class="${row.trend === "下降" ? "trend-down" : "trend-up"}">${esc(row.trend)} ${esc(row.heatChange || "")}</td>
+          <td class="role">${esc(row.nodeRole)}</td>
+        </tr>`).join("");
+      document.querySelectorAll("#nodeRows tr").forEach(tr => tr.addEventListener("click", () => selectNode(rows[Number(tr.dataset.index)])));
+    }
+
+    function selectNode(row) {
+      state.selected = row;
+      renderTable();
+      renderInspector();
+    }
+
+    function renderInspector() {
+      const host = document.querySelector("#inspector");
+      const row = state.selected;
+      if (!row) { host.innerHTML = `<div class="hint">从图谱或表格选择一个节点<br>查看它背后的内容与链接</div>`; return; }
+      const details = rowsFor("details").filter(item => item.parentName === row.name).slice(0, 12);
+      const links = details.filter(item => item.url).map(item => `<a class="detail-link" href="${esc(item.url)}" target="_blank" rel="noreferrer"><strong>${esc(item.detailType)}</strong> · ${esc(item.title || item.url)}</a>`).join("");
+      host.innerHTML = `
+        <div class="inspect-kicker">${esc(row.relationType)} / ${esc(row.nodeRole)}</div>
+        <h3>${esc(row.name)}</h3>
+        <div class="inspect-grid">
+          <div class="inspect-metric"><span>与 ${esc(state.keyword)} 相关度</span><strong>${pct(row.relevancePercent)}</strong></div>
+          <div class="inspect-metric"><span>搜索指数</span><strong>${num(row.searchIndex)}</strong></div>
+          <div class="inspect-metric"><span>综合指数</span><strong>${num(row.compositeIndex)}</strong></div>
+          <div class="inspect-metric"><span>趋势 / 涨幅</span><strong class="${row.trend === "下降" ? "trend-down" : "trend-up"}">${esc(row.trend)} ${esc(row.heatChange || "")}</strong></div>
+        </div>
+        <div class="detail-title">关联内容与搜索链接（${details.length}）</div>
+        <div class="detail-list">${links || `<div class="notice">当前节点已保存指数，但本批次没有返回可用链接。</div>`}</div>`;
+    }
+    function drawGraphG6(target, inputRows, type) {
+      if (!window.G6 || !window.G6.Graph) return drawGraph(target, inputRows, type);
+      const host = document.querySelector(target);
+      const rows = inputRows.slice().sort((a,b) => Number(a.graphOrder || 0) - Number(b.graphOrder || 0));
+      const badge = document.querySelector(type === "search" ? "#searchCount" : "#contentCount");
+      if (!rows.length) return drawGraph(target, inputRows, type);
+
+      window.__douyinG6Graphs ||= new Map();
+      const previous = window.__douyinG6Graphs.get(target);
+      if (previous) previous.destroy();
+      host.innerHTML = `<div class="g6-shell"><div class="g6-stage" role="img" aria-label="${type === 'search' ? '搜索' : '内容'}关联关键词图谱"></div><aside class="g6-data-popover" aria-live="polite" hidden></aside><div class="g6-hint">悬停看数据 · 点击看完整证据 · 滚轮缩放</div><div class="g6-tools" aria-label="图谱视图工具"><button data-action="out" title="缩小">−</button><button data-action="fit" title="复位视图">◎</button><button data-action="in" title="放大">＋</button></div></div>`;
+      const container = host.querySelector(".g6-stage");
+      const popover = host.querySelector(".g6-data-popover");
+      const centerId = `${type}-center`;
+      const rowById = new Map();
+      const openNodeDetails = row => {
+        if (!row) return;
+        document.querySelector('#g6DetailOverlay')?.remove();
+        const sourceSection = row.relationType || (type === 'search' ? '搜索关联词' : '内容关联词');
+        const detailRows = (datasets.details || []).filter(item => item.keyword === row.keyword && item.parentName === row.name && item.snapshotDate === row.snapshotDate && item.sourceSection === sourceSection).sort((a,b) => Number(a.rank || 0) - Number(b.rank || 0));
+        if (!detailRows.length && row.firstLink) detailRows.push({detailType:'原始证据',rank:1,title:row.name,url:row.firstLink});
+        const groups = detailRows.reduce((result,item) => { (result[item.detailType || '证据内容'] ||= []).push(item); return result; },{});
+        const evidenceHtml = Object.entries(groups).map(([group,items]) => `<section class="g6-evidence-group"><div class="g6-evidence-title"><h3>${esc(group)}</h3><span>${items.length} 条</span></div><div class="g6-evidence-list">${items.map(item => `<a class="g6-evidence-link" href="${esc(item.url)}" target="_blank" rel="noreferrer"><span class="rank">${Number(item.rank || 0)}</span><strong>${esc(item.title || '打开原始内容')}</strong><i>↗</i></a>`).join('')}</div></section>`).join('');
+        const overlay = document.createElement('div');
+        overlay.id = 'g6DetailOverlay';
+        overlay.className = 'g6-detail-overlay';
+        overlay.setAttribute('role','dialog');
+        overlay.setAttribute('aria-modal','true');
+        overlay.setAttribute('aria-label',`${row.name}完整详情`);
+        overlay.innerHTML = `<aside class="g6-detail-drawer"><header class="g6-detail-head"><div><div class="kicker">${esc(sourceSection)} · 节点完整证据</div><h2>${esc(row.name)}</h2><p>${esc(row.keyword)} · ${esc(row.dataWindow || '')} · 数据日期 ${esc(row.snapshotDate || '暂无')}</p></div><button class="g6-detail-close" type="button" aria-label="关闭详情">×</button></header><section class="g6-detail-metrics"><div class="g6-detail-metric"><span>搜索指数</span><strong>${num(row.searchIndex)}</strong></div><div class="g6-detail-metric"><span>综合指数</span><strong>${num(row.compositeIndex)}</strong></div><div class="g6-detail-metric"><span>相关度</span><strong>${pct(row.relevancePercent)}</strong></div><div class="g6-detail-metric"><span>热度变化</span><strong class="${Number(row.heatChangeRate || 0) >= 0 ? 'trend-up' : 'trend-down'}">${esc(row.heatChange || pct(row.heatChangeRate))}</strong></div><div class="g6-detail-metric"><span>热度排名</span><strong>${row.heatRank ? `#${row.heatRank}` : '暂无'}</strong></div><div class="g6-detail-metric"><span>已保存证据</span><strong>${detailRows.length} 条</strong></div></section>${evidenceHtml || '<div class="g6-detail-empty">这个节点暂未采集到可打开的详细内容。</div>'}</aside>`;
+        document.body.appendChild(overlay);
+        const close = () => { overlay.remove(); document.removeEventListener('keydown',onKey); };
+        const onKey = event => { if (event.key === 'Escape') close(); };
+        overlay.querySelector('.g6-detail-close').addEventListener('click',close);
+        overlay.addEventListener('click',event => { if (event.target === overlay) close(); });
+        document.addEventListener('keydown',onKey);
+      };
+      const opportunities = rows.map(row => Math.log10((Number(row.searchIndex) || 0) + 1) * Math.sqrt(Math.max(Number(row.relevancePercent) || 0, 1) / 100));
+      const minScore = Math.min(...opportunities), maxScore = Math.max(...opportunities);
+      const nodeData = rows.map((row,index) => {
+        const name = row.name || row.relatedKeyword || `关联词 ${index + 1}`;
+        const id = `${type}-${index}-${name}`;
+        const normalized = maxScore === minScore ? .5 : (opportunities[index] - minScore) / (maxScore - minScore);
+        rowById.set(id,row);
+        return {
+          id,
+          data: {
+            label: name,
+            size: 18 + normalized * 21,
+            color: Number(row.heatChangeRate || 0) >= 0 ? "#ee6b56" : "#0f9f8f",
+            showLabel: index < 14,
+            relevance: Number(row.relevancePercent || 0),
+            searchIndex: Number(row.searchIndex || 0)
+          }
+        };
+      });
+      const nodes = [{id:centerId,data:{label:state.keyword,size:78,color:"#1967d2",showLabel:true,isCenter:true}},...nodeData];
+      const edges = nodeData.map((node,index) => ({id:`${type}-edge-${index}`,source:centerId,target:node.id,data:{relevance:node.data.relevance}}));
+      badge.textContent = `${rows.length} 节点 · 最高 ${pct(Math.max(...rows.map(row => Number(row.relevancePercent) || 0)))}`;
+
+      const graphWidth = Math.max(container.clientWidth,320);
+      const graphHeight = 430;
+      const hint = host.querySelector('.g6-hint');
+      if (hint) hint.textContent = '点击节点查看数据 · 再次点击固定卡片';
+      const graph = new G6.Graph({
+        container,
+        width: graphWidth,
+        height: graphHeight,
+        data: {nodes,edges},
+        padding: 48,
+        layout: {type:"radial",focusNode:centerId,center:[graphWidth/2,graphHeight/2],unitRadius:170,linkDistance:190,preventOverlap:true,nodeSize:40},
+        behaviors: ["hover-activate"],
+        node: {
+          style: {
+            size: datum => datum.data.size,
+            fill: datum => datum.data.color,
+            stroke: "#fffdf8",
+            lineWidth: 3,
+            shadowColor: "rgba(23,33,43,.14)",
+            shadowBlur: 8,
+            labelText: datum => datum.data.label,
+            labelFill: datum => datum.data.isCenter ? "#ffffff" : "#30414b",
+            labelFontSize: datum => datum.data.isCenter ? 15 : 11,
+            labelFontWeight: datum => datum.data.isCenter ? 700 : 600,
+            labelPlacement: datum => datum.data.isCenter ? "center" : "bottom",
+            labelOffsetY: 7,
+            labelBackground: datum => datum.data.isCenter ? false : true,
+            labelBackgroundFill: "rgba(255,253,248,.88)",
+            labelBackgroundRadius: 4,
+            labelPadding: [2,4]
+          },
+          state: {active:{lineWidth:5,shadowBlur:16},inactive:{opacity:.2}}
+        },
+        edge: {
+          style: {
+            stroke: "#c6d2d6",
+            lineWidth: datum => .7 + Math.min(Number(datum.data.relevance || 0) / 45,1.8),
+            opacity: .72
+          },
+          state: {active:{stroke:"#6c8fa2",lineWidth:2},inactive:{opacity:.1}}
+        },
+        animation: true
+      });
+
+      let pinnedNodeId = null;
+      const renderNodePopover = (nodeId,pinned = false) => {
+        const row = rowById.get(nodeId);
+        if (!row && nodeId !== centerId) return;
+        const actions = pinned ? `<div class="g6-pop-actions"><button type="button" data-pop-action="detail">打开完整详情</button><button type="button" data-pop-action="close">关闭</button></div>` : '';
+        if (nodeId === centerId) {
+          const overview = currentOverview();
+          popover.innerHTML = `<div class="g6-pop-kicker">中心关键词 · ${type === 'search' ? '搜索关联' : '内容关联'}</div><h4>${esc(state.keyword)}</h4><div class="g6-pop-grid"><div class="g6-pop-metric"><span>最新搜索指数</span><strong>${num(overview.latestSearchIndex)}</strong></div><div class="g6-pop-metric"><span>最新综合指数</span><strong>${num(overview.latestCompositeIndex)}</strong></div><div class="g6-pop-metric"><span>当前图谱节点</span><strong>${rows.length}</strong></div><div class="g6-pop-metric"><span>数据日期</span><strong>${esc(overview.snapshotDate || '暂无')}</strong></div></div><div class="g6-pop-foot">中心词用于建立语义参照，不与关联节点合计指数。</div>${actions}`;
+        } else {
+          const name = row.name || row.relatedKeyword || '未命名关联词';
+          const rate = Number(row.heatChangeRate || 0);
+          const evidenceCollections = [row.evidenceLinks,row.detailLinks,row.hotSearchLinks,row.hotContentLinks,row.links].filter(Array.isArray);
+          const evidenceCount = evidenceCollections.reduce((sum,items) => sum + items.length,0) || Number(row.evidenceCount || row.detailCount || 0);
+          popover.innerHTML = `<div class="g6-pop-kicker">${type === 'search' ? '搜索关联节点' : '内容关联节点'}</div><h4 title="${esc(name)}">${esc(name)}</h4><div class="g6-pop-grid"><div class="g6-pop-metric"><span>搜索指数</span><strong>${num(row.searchIndex)}</strong></div><div class="g6-pop-metric"><span>与中心词相关度</span><strong>${pct(row.relevancePercent)}</strong></div><div class="g6-pop-metric"><span>热度变化</span><strong class="${rate >= 0 ? 'trend-up' : 'trend-down'}">${rate >= 0 ? '+' : ''}${pct(rate)}</strong></div><div class="g6-pop-metric"><span>证据内容</span><strong>${evidenceCount ? `${evidenceCount} 条` : '进入详情查看'}</strong></div></div><div class="g6-pop-foot">数据日期 ${esc(row.snapshotDate || currentOverview().snapshotDate || '暂无')} · ${pinned ? '节点已固定，可打开完整内容和原始链接' : '点击节点可固定此数据卡'}</div>${actions}`;
+        }
+        popover.classList.toggle('pinned',pinned);
+        popover.hidden = false;
+        if (pinned) {
+          const detailButton = popover.querySelector('[data-pop-action="detail"]');
+          if (detailButton) detailButton.addEventListener('click',() => openNodeDetails(row));
+          popover.querySelector('[data-pop-action="close"]').addEventListener('click',() => {
+            pinnedNodeId = null;
+            popover.classList.remove('pinned');
+            popover.hidden = true;
+          });
+        }
+      };
+      graph.on("node:click", event => {
+        const nodeId = event.target.id;
+        const row = rowById.get(nodeId);
+        if (row) {
+          state.selected = row;
+          renderTable();
+          renderInspector();
+        }
+        pinnedNodeId = nodeId;
+        renderNodePopover(nodeId,true);
+      });
+      graph.on("node:pointerenter", event => {
+        if (!pinnedNodeId) renderNodePopover(event.target.id,false);
+      });
+      graph.on("node:pointerleave", () => {
+        if (!pinnedNodeId) popover.hidden = true;
+      });
+      graph.on("canvas:click", () => {
+        pinnedNodeId = null;
+        popover.classList.remove('pinned');
+        popover.hidden = true;
+      });
+      graph.render().catch(() => drawGraph(target,inputRows,type));
+      window.__douyinG6Graphs.set(target,graph);
+    }
+
+    boot();
+  </script>
+  <style>
+    #content-workbench-entry {
+      position: fixed;
+      right: 24px;
+      top: 18px;
+      z-index: 9999;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      min-height: 48px;
+      padding: 0 18px;
+      border: 1px solid rgba(255,255,255,.2);
+      border-radius: 999px;
+      color: #fff9ed;
+      background: #174d43;
+      box-shadow: 0 14px 38px rgba(23,77,67,.28);
+      font: 700 14px/1 "Microsoft YaHei", sans-serif;
+      letter-spacing: .02em;
+      text-decoration: none;
+      transition: transform .2s ease, box-shadow .2s ease, background .2s ease;
+    }
+    #content-workbench-entry:hover {
+      transform: translateY(-3px);
+      background: #ef6a4d;
+      box-shadow: 0 18px 44px rgba(239,106,77,.3);
+    }
+    .content-workbench-entry__signal {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: #ffd893;
+      box-shadow: 0 0 0 5px rgba(255,216,147,.14);
+    }
+    @media (max-width: 640px) {
+      #content-workbench-entry {
+        right: 12px;
+        top: 10px;
+        left: 12px;
+        border-radius: 14px;
+      }
+    }
+  </style>
+  <style id="typography-refinement">
+    :root {
+      --font-ui: "Microsoft YaHei UI", "PingFang SC", "Noto Sans CJK SC", sans-serif;
+      --font-display: "Microsoft YaHei UI", "HarmonyOS Sans SC", "PingFang SC", sans-serif;
+      --font-data: "Bahnschrift", "DIN Alternate", "Aptos Display", sans-serif;
+    }
+    body,
+    button,
+    input,
+    select,
+    textarea {
+      font-family: var(--font-ui);
+      font-synthesis: none;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+    }
+    h1,
+    h2,
+    h3,
+    h4,
+    #brandTitle,
+    .section-head h2,
+    .panel-head h3,
+    .g6-data-popover h4,
+    .g6-detail-head h2 {
+      font-family: var(--font-display);
+      font-weight: 700;
+      letter-spacing: -.025em;
+    }
+    .section-head h2 {
+      font-size: 22px;
+      line-height: 1.25;
+    }
+    .kpi .label {
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: .01em;
+    }
+    .kpi .value,
+    .g6-pop-metric strong,
+    .g6-detail-metric strong,
+    .count-badge {
+      font-family: var(--font-data);
+      font-variant-numeric: tabular-nums lining-nums;
+      font-feature-settings: "tnum" 1, "lnum" 1, "kern" 1;
+    }
+    .kpi .value {
+      margin-top: 7px;
+      font-size: 27px;
+      font-weight: 650;
+      line-height: 1;
+      letter-spacing: -.015em;
+    }
+    .kpi .sub {
+      margin-top: 6px;
+      font-size: 11px;
+      line-height: 1.35;
+    }
+  </style>
+</body>
+</html>
